@@ -7,6 +7,16 @@
 var app = require('../app');
 var debug = require('debug')('growtogether-backend:server');
 var http = require('http');
+var mongoose = require('mongoose');
+
+/**
+ * Setting up Mongoose
+ */
+
+mongoose.connect(process.env.DB_URL || 'mongodb://127.0.0.1:27017/growTogether');
+const db = mongoose.connection;
+db.on('error', (error) => console.error(error));
+db.once('open', () => console.log("Database connected!"));
 
 /**
  * Get port from environment and store in Express.
@@ -25,7 +35,7 @@ var server = http.createServer(app);
  * Listen on provided port, on all network interfaces.
  */
 
-server.listen(port);
+server.listen(port, () => console.log(`server listening on port ${port}!`));
 server.on('error', onError);
 server.on('listening', onListening);
 

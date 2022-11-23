@@ -7,7 +7,7 @@ var cors = require('cors');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
-var campaignsRouter = require('./routes/campaigns');
+var campaignsRouter = require('./routes/campaignsRouter');
 
 var app = express();
 
