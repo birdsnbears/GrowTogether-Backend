@@ -15,12 +15,12 @@ router.get('/', async (req, res) => {
 });
 
 /* GET a specific campaign listing by id. */
-router.get('/:id', getCampaign, function (req, res) {
+router.get('/:campaignID', getCampaign, function (req, res) {
 	res.json(res.campaign);
 });
 
 /* PATCH a specific campaign listing by id. */
-router.patch('/:id', getCampaign, async (req, res) => {
+router.patch('/:campaignID', getCampaign, async (req, res) => {
 	// update the given campaign information
 	let updatedKeys = Object.keys(req.body);
 	updatedKeys.forEach(key => {
@@ -36,7 +36,7 @@ router.patch('/:id', getCampaign, async (req, res) => {
 })
 
 /* DELETE a specific campaign listing by id. */
-router.delete('/:id', getCampaign, async (req, res) => {
+router.delete('/:campaignID', getCampaign, async (req, res) => {
 	try {
 		await res.campaign.remove();
 		res.json({ message: 'Deleted Campaign' });
@@ -47,13 +47,16 @@ router.delete('/:id', getCampaign, async (req, res) => {
 
 /* POST a new campaign! */
 router.post('/', async (req, res) => {
+	const b = req.body;
 	const campaign = new Campaign({
-		title: req.body.title,
-		subtitle: req.body.subtitle,
-		isPublished: req.body.isPublished,
-		dateCreated: req.body.dateCreated,
-		goalAmount: req.body.goalAmount,
-		targetDuration: req.body.targetDuration
+		title: b.title,
+		subtitle: b.subtitle,
+		description: b.description,
+		// mainImage: b.mainImage,
+		isPublished: b.isPublished,
+		owner: b.owner,
+		goal: b.goal,
+		duration: b.duration
 	})
 	try {
 		const newCampaign = await campaign.save();
@@ -72,7 +75,7 @@ router.post('/', async (req, res) => {
 async function getCampaign(req, res, next) {
 	let campaign;
 	try {
-		campaign = await Campaign.findById(req.params.id);
+		campaign = await Campaign.findById(req.params.campaignID);
 		if (campaign == null) {
 			return res.status(404).json({ message: 'Cannot find campaign' });
 		}

@@ -16,19 +16,25 @@ const campaignSchema = new mongoose.Schema({
   mainImage: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Image',
-    required: false
+    required: false // will be true, must upload default image though
   },
   isPublished: {
     type: Boolean,
+    required: true,
+    default: false
+  },
+  owner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true
   },
   goal: {
     type: Number,
-    required: false
+    required: true
   },
   duration: {
     type: Number,
-    required: false
+    required: true
   },
   publishDate: {
     type: Date,
@@ -59,6 +65,7 @@ Subtitle
 Description
 Main Image
 IsPublished
+Owner
 Goal
 Duration
 Publish Date
