@@ -148,12 +148,12 @@ router.post('/Donate/:campaignID,/:userID', getCampaign, getUser, async (req, re
   // check for correct params
   const b = req.body;
   if (!b.purchaseDate || !b.total || !b.rewards) {
-    return res.status(422).json({ message: "Missing necessary account information" }); // Unprocessable Entity
+    return res.status(428).json({ message: "Missing necessary information" }); // Precondition Required
   }
   for (let i = 0; i < b.rewards.length; i++) {
     const r = b.rewards[i];
     if (!r.name || !r.price || !r.description || !r.expectedDeliveryDate) {
-      return res.status(422).json({ message: "Missing necessary account information" }); // Unprocessable Entity
+      return res.status(428).json({ message: "Missing necessary information" }); // Precondition Required
     }
   }
   // check for invalid data
