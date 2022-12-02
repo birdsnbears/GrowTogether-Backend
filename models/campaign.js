@@ -16,7 +16,8 @@ const campaignSchema = new mongoose.Schema({
   mainImage: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Image',
-    required: false // will be true, must upload default image though
+    required: true, // will be true, must upload default image though
+    default: "6389766d373c82d383fc7dbc"
   },
   isPublished: {
     type: Boolean,
