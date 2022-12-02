@@ -110,9 +110,7 @@ router.patch('/:userID', getUser, async (req, res) => {
   }
 })
 
-/* Deleting Account in Account Settings
-*  Needs to make sure the account has yet to make a donation or owns a campaign that is published.
-*/
+/* Deleting Account in Account Settings */
 router.delete('/:userID', getUser, async (req, res) => {
   // middleware found user
 
@@ -144,6 +142,46 @@ router.delete('/:userID', getUser, async (req, res) => {
     return res.status(500).json({ message: err.message });
   }
 })
+
+/* Donate */
+router.post('/Donate/:campaignID,/:userID', getCampaign, getUser, async (req, res) => {
+  // check for correct params
+  const b = req.body;
+  if (!b.purchaseDate || !b.total || !b.rewards) {
+    return res.status(422).json({ message: "Missing necessary account information" }); // Unprocessable Entity
+  }
+  for (let i = 0; i < b.rewards.length; i++) {
+    const r = b.rewards[i];
+    if (!r.name || !r.price || !r.description || !r.expectedDeliveryDate) {
+      return res.status(422).json({ message: "Missing necessary account information" }); // Unprocessable Entity
+    }
+  }
+  // check for invalid data
+  // heads up, we are NOT doing Date validation. If they donated just now, they can exclude the date.
+  // otherwise we can assume admins are filling in data with "fake" donations.
+  // additionally, we are assuming that the reward information is correct.
+  if (b.total < 0) {
+    return res.status(428).json({ message: "Invalid Donation Total" }); // Precondition Required
+  }
+  if (!res.campaign.isPublished) {
+    return res.status(428).json({ message: "Campaign is not Published" }); // Precondition Required
+  }
+
+  // no errors, make donation:
+  res.user.donations.push({
+    campaignID: req.params.campaignID,
+    purchaseDate: b.purchaseDate,
+    total: b.total,
+    rewards: b.rewards
+  })
+
+  try {
+    const newUser = await user.save();
+    res.status(201).json({ userID: newUser._id }); // Created
+  } catch (error) {
+    res.status(500).json(error);
+  }
+});
 
 /**
  * This is a middleware function that is to be used whenever we expect a user ID from the client

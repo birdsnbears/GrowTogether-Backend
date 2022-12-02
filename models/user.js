@@ -23,14 +23,18 @@ const userSchema = new mongoose.Schema({
       ref: "Campaign",
       required: true
     },
-    purchaseDate: Date,
-    amount: Number
-  }],
-  rewards: [{
-    name: String,
-    price: Number,
-    description: String,
-    expectedDeliveryDate: Date
+    purchaseDate: {
+      type: Date,
+      required: true,
+      default: Date.now()
+    },
+    total: Number,
+    rewards: [{
+      name: String,
+      price: Number,
+      description: String,
+      expectedDeliveryDate: Date
+    }]
   }],
   campaignsOwned: [{
     type: mongoose.Schema.Types.ObjectId,
