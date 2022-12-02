@@ -92,7 +92,8 @@ router.patch('/:userID', getUser, async (req, res) => {
 
     // update with given user settings
     let updatedKeys = Object.keys(req.body);
-    updatedKeys.forEach(async key => {
+    for (let i = 0; i < updatedKeys.length; i++) {
+      const key = updatedKeys[i];
       // if they updated their username, update the owner value on all of their owned campaigns
       if (key == "username" && res.user.username != req.body.username) {
         await Campaign.updateMany({ _id: res.user.campaignsOwned }, { owner: req.body.username });
@@ -101,7 +102,7 @@ router.patch('/:userID', getUser, async (req, res) => {
       if ((key == "firstName" || key == "lastName" || key == "username" || key == "password") && req.body[key]) {
         res.user[key] = req.body[key];
       }
-    });
+    }
 
     const updateduser = await res.user.save();
     return res.status(205).json(updateduser); // Reset Content
