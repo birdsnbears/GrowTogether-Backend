@@ -3,6 +3,8 @@ const campaign = require('../models/campaign');
 var router = express.Router();
 const Campaign = require('../models/campaign');
 const User = require('../models/user');
+const Image = require('../models/image');
+const { isValidObjectId } = require('mongoose');
 
 /* GET all campaigns in the database */
 // currently it returns all the campaigns in the campaign db.
@@ -14,6 +16,47 @@ router.get('/', async (req, res) => {
 	} catch (error) {
 		console.error(error.message);
 		res.status(500).json({ message: error.message });
+	}
+});
+
+/* POST a new campaign! */
+router.post('/:userID', getUser, async (req, res) => {
+	const b = req.body;
+	// check for correct params
+	if (!b.title || !b.subtitle || !b.description || !b.goal || !b.duration) {
+		return res.status(428).json({ message: "Missing necessary information" }); // Precondition Required
+	}
+	// check for invalid data
+	try {
+		if (b.mainImage) {
+			if (!(isValidObjectId(b.mainImage) && await Image.findById(b.mainImage))) {
+				return res.status(404).json({ message: "Image not found" }); // Not Found
+			}
+		}
+		if (b.goal <= 0) {
+			return res.status(428).json({ message: "Invalid goal amount" }); // Precondition Required
+		}
+		if (b.duration <= 0) {
+			return res.status(428).json({ message: "Invalid duration amount" }); // Precondition Required
+		}
+
+		// no errors, make campaign
+		const campaign = new Campaign({
+			title: b.title,
+			subtitle: b.subtitle,
+			description: b.description,
+			mainImage: b.mainImage,
+			isPublished: false,
+			owner: res.user.username,
+			goal: b.goal,
+			duration: b.duration
+		})
+		const newCampaign = await campaign.save();
+		res.user.campaignsOwned.push(newCampaign._id);
+		await res.user.save();
+		res.status(201).json(newCampaign);
+	} catch (error) {
+		res.status(500).json(error);
 	}
 });
 
@@ -69,36 +112,6 @@ router.delete('/', async (req, res) => {
 		res.status(500).json({ message: err.message });
 	}
 })
-
-/* POST a new campaign! */
-router.post('/', async (req, res) => {
-	const b = req.body;
-	const campaign = new Campaign({
-		title: b.title,
-		subtitle: b.subtitle,
-		description: b.description,
-		// mainImage: b.mainImage,
-		isPublished: b.isPublished,
-		owner: b.owner,
-		goal: b.goal,
-		duration: b.duration
-	})
-	try {
-		// make sure owner exists
-		const potentialOwner = await getUserByUsername(campaign.owner);
-		if (potentialOwner == null) {
-			return res.status(404).json({ message: "User not found" }); // Not Found
-		}
-		// owner exists, create campaign references
-		const newCampaign = await campaign.save();
-		potentialOwner.campaignsOwned.push(newCampaign._id);
-		await potentialOwner.save();
-		console.log(potentialOwner.campaignsOwned);
-		res.status(201).json(newCampaign);
-	} catch (error) {
-		res.status(500).json(error);
-	}
-});
 
 /**
  * This is a middleware function that is to be used whenever we expect a campaign ID from the client
