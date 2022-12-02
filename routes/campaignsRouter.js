@@ -19,7 +19,18 @@ router.get('/', async (req, res) => {
 	}
 });
 
-/* POST a new campaign! */
+/* DELETE ALL CAMPAIGNS. FOR DEBUGGING PURPOSES ONLY */
+router.delete('/', async (req, res) => {
+	try {
+		await Campaign.deleteMany();
+		const campaigns = await Campaign.find();
+		res.json(campaigns);
+	} catch (err) {
+		res.status(500).json({ message: err.message });
+	}
+})
+
+/* Create Campaign */
 router.post('/:userID', getUser, async (req, res) => {
 	const b = req.body;
 	// check for correct params
@@ -81,7 +92,7 @@ router.patch('/:campaignID', getCampaign, async (req, res) => {
 	}
 })
 
-/* DELETE a specific campaign listing by id. */
+/* Delete Campaign */
 router.delete('/:campaignID/:userID', getCampaign, getUser, async (req, res) => {
 	try {
 		// make sure user owns this campaign
@@ -97,17 +108,6 @@ router.delete('/:campaignID/:userID', getCampaign, getUser, async (req, res) => 
 		// delete campaign
 		await res.campaign.remove();
 		res.status(205).json({ message: 'Deleted Campaign' }); // Reset Content
-	} catch (err) {
-		res.status(500).json({ message: err.message });
-	}
-})
-
-/* DELETE ALL CAMPAIGNS. FOR DEBUGGING PURPOSES ONLY */
-router.delete('/', async (req, res) => {
-	try {
-		await Campaign.deleteMany();
-		const campaigns = await Campaign.find();
-		res.json(campaigns);
 	} catch (err) {
 		res.status(500).json({ message: err.message });
 	}
@@ -153,21 +153,6 @@ async function getUser(req, res, next) {
 
 	res.user = user;
 	next();
-};
-
-/**
- * This is a middleware function that is to be used whenever we expect a campaign ID from the client
- * We search the database for a campaign with the given id.
- * If something random goes wrong, return status 500
- * If we cannot find a matching campaign, return status 404
- */
-async function getUserByUsername(username, res) {
-	try {
-		user = await User.findOne({ username: username });
-		return user;
-	} catch (error) {
-		return res.status(500).json({ message: error.message });
-	}
 };
 
 module.exports = router;
