@@ -33,11 +33,9 @@ const userSchema = new mongoose.Schema({
     expectedDeliveryDate: Date
   }],
   campaignsOwned: [{
-    campaignID: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Campaign",
-      required: true
-    }
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Campaign",
+    required: true
   }]
 });
 
