@@ -95,12 +95,7 @@ router.patch('/:userID', getUser, async (req, res) => {
     updatedKeys.forEach(async key => {
       // if they updated their username, update the owner value on all of their owned campaigns
       if (key == "username" && res.user.username != req.body.username) {
-        res.user.populate('campaignsOwned');
-        const campaigns = res.user.campaignsOwned;
-        campaigns.forEach(async campaign => {
-          campaign.owner = req.body.username;
-          await campaign.save();
-        })
+        await Campaign.updateMany({ _id: res.user.campaignsOwned }, { owner: req.body.username });
       }
       // only allow changes to values found in Account Settings
       if ((key == "firstName" || key == "lastName" || key == "username" || key == "password") && req.body[key]) {
