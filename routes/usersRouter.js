@@ -64,15 +64,15 @@ router.get("/Login", async function (req, res) {
   try {
     // find user with username/password. If either is missing, user will be null.
     user = await User.findOne({
-      username: req.body.username,
-      password: req.body.password,
+      username: req.query.username,
+      password: req.query.password,
     });
     if (user == null) {
       // username and password is wrong
       return res.status(401).json({ message: "Invalid Credentials" }); // Unauthorized
     }
     // found corresponding account
-    return res.status(205).json({ userID: user._id }); // Reset Content
+    return res.status(200).json({ userID: user._id }); // Reset Content
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -120,7 +120,7 @@ router.patch("/:userID", getUser, async (req, res) => {
     }
 
     const updateduser = await res.user.save();
-    return res.status(205).json(updateduser); // Reset Content
+    return res.status(200).json(updateduser); // Reset Content
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
