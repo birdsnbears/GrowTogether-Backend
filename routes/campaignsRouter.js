@@ -6,29 +6,7 @@ const User = require('../models/user');
 const Image = require('../models/image');
 const { isValidObjectId } = require('mongoose');
 
-/* GET all campaigns in the database */
-// currently it returns all the campaigns in the campaign db.
-router.get('/', async (req, res) => {
-	try {
-		// Campaign.deleteMany();
-		const campaigns = await Campaign.find();
-		res.json(campaigns);
-	} catch (error) {
-		console.error(error.message);
-		res.status(500).json({ message: error.message });
-	}
-});
-
-/* DELETE ALL CAMPAIGNS. FOR DEBUGGING PURPOSES ONLY */
-router.delete('/', async (req, res) => {
-	try {
-		await Campaign.deleteMany();
-		const campaigns = await Campaign.find();
-		res.json(campaigns);
-	} catch (err) {
-		res.status(500).json({ message: err.message });
-	}
-})
+/***** FOR HEADER/Account Overview *****/
 
 /* Create Campaign */
 router.post('/:userID', getUser, async (req, res) => {
@@ -71,26 +49,49 @@ router.post('/:userID', getUser, async (req, res) => {
 	}
 });
 
-/* GET a specific campaign listing by id. */
-router.get('/:campaignID', getCampaign, function (req, res) {
-	res.json(res.campaign);
-});
+/***** FOR HOMEPAGE *****/
 
-/* PATCH a specific campaign listing by id. */
-router.patch('/:campaignID', getCampaign, async (req, res) => {
-	// update the given campaign information
-	let updatedKeys = Object.keys(req.body);
-	updatedKeys.forEach(key => {
-		res.campaign[key] = req.body[key];
-	});
+/* Featured Campaigns */
+// router.get('/featured/', async (req, res) => {
+// 	// Top # of Campaigns with the highest visits from the previous day
+// })
 
+/* Recommended */
+// router.get('/recommended/', async (req, res) => {
+// 	// Top # of campaigns that had the most backing from previous day
+// })
+
+/***** FOR PUBLIC CAMPAIGN *****/
+
+/* Public Campaign Page */
+// router.get('/public/:campaignID', getCampaign, async (req, res) => {
+
+// })
+
+/***** FOR OVERVIEW *****/
+
+/* Publish Campaign */
+router.patch('/publish/:campaignID/:userID', getCampaign, getUser, async (req, res) => {
+	// We can assume all in the stored campaign are valid values. We still must ensure that the content is not still empty though.
+	// Check Empty Contents
+	const camp = res.campaign;
+	if (camp.content.length <= 0) {
+		return res.status(422).json({ message: "A Published Campaign must have Content" }); // Unprocessable Entity
+	}
+	// publish
 	try {
+		res.campaign.isPublished = true;
+		res.campaign.publishDate = Date.now();
 		const updatedCampaign = await res.campaign.save();
-		res.json(updatedCampaign);
+		res.status(201).json(updatedCampaign); // Reset Content
 	} catch (error) {
 		res.status(400).json({ message: error.message });
 	}
 })
+
+/***** FOR SETTINGS *****/
+
+/* Edit Settings */
 
 /* Delete Campaign */
 router.delete('/:campaignID/:userID', getCampaign, getUser, async (req, res) => {
@@ -108,6 +109,65 @@ router.delete('/:campaignID/:userID', getCampaign, getUser, async (req, res) => 
 		// delete campaign
 		await res.campaign.remove();
 		res.status(205).json({ message: 'Deleted Campaign' }); // Reset Content
+	} catch (err) {
+		res.status(500).json({ message: err.message });
+	}
+})
+
+/***** FOR EDIT CONTENT *****/
+
+/* Edit Content */
+
+/***** FOR EDIT REWARDS *****/
+
+/* Edit Rewards */
+
+/***** FOR SEARCH *****/
+
+/* Search */
+
+/*********************** FOR DEBUGGING ********************************/
+
+/* GET all campaigns. FOR DEBUGGING PURPOSES ONLY */
+// currently it returns all the campaigns in the campaign db.
+router.get('/', async (req, res) => {
+	try {
+		// Campaign.deleteMany();
+		const campaigns = await Campaign.find();
+		res.json(campaigns);
+	} catch (error) {
+		console.error(error.message);
+		res.status(500).json({ message: error.message });
+	}
+});
+
+/* GET a specific campaign listing by id. FOR DEBUGGING PURPOSES ONLY */
+router.get('/:campaignID', getCampaign, function (req, res) {
+	res.json(res.campaign);
+});
+
+/* PATCH Campaign. FOR DEBUG PURPOSES ONLY. THIS DOES NOT DO ANY DATA VALIDATION*/
+router.patch('/:campaignID', getCampaign, async (req, res) => {
+	// update the given campaign information
+	let updatedKeys = Object.keys(req.body);
+	updatedKeys.forEach(key => {
+		res.campaign[key] = req.body[key];
+	});
+
+	try {
+		const updatedCampaign = await res.campaign.save();
+		res.json(updatedCampaign);
+	} catch (error) {
+		res.status(400).json({ message: error.message });
+	}
+})
+
+/* DELETE ALL CAMPAIGNS. FOR DEBUGGING PURPOSES ONLY */
+router.delete('/', async (req, res) => {
+	try {
+		await Campaign.deleteMany();
+		const campaigns = await Campaign.find();
+		res.json(campaigns);
 	} catch (err) {
 		res.status(500).json({ message: err.message });
 	}
