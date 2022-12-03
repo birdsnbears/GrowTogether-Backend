@@ -1,17 +1,17 @@
-var express = require('express');
+var express = require("express");
 var router = express.Router();
-const User = require('../models/user');
-const Campaign = require('../models/campaign');
+const User = require("../models/user");
+const Campaign = require("../models/campaign");
 
 // This get doesn't really do anything, but i'm just returning a json like everything else expects instead of html
-router.get('/', async (req, res) => {
-  const users = await User.find() // for debugging only
+router.get("/", async (req, res) => {
+  const users = await User.find(); // for debugging only
   res.json(users); // for debugging only
   // res.status(404).json({ message: "/users does not exist! Try providing a user ID!" }); // Not Found
 });
 
 /* DELETE ALL USERS. FOR DEBUGGING PURPOSES ONLY */
-router.delete('/', async (req, res) => {
+router.delete("/", async (req, res) => {
   try {
     await User.deleteMany();
     const users = await User.find();
@@ -19,17 +19,24 @@ router.delete('/', async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
-})
+});
 
 /* Sign Up */
-router.post('/', async (req, res) => {
+router.post("/", async (req, res) => {
   // check for correct params
-  if (!req.body.firstName || !req.body.lastName || !req.body.username || !req.body.password) {
-    return res.status(422).json({ message: "Missing necessary account information" }); // Unprocessable Entity
+  if (
+    !req.body.firstName ||
+    !req.body.lastName ||
+    !req.body.username ||
+    !req.body.password
+  ) {
+    return res
+      .status(422)
+      .json({ message: "Missing necessary account information" }); // Unprocessable Entity
   }
 
   // check for duplicate username
-  let potentialUser = await User.findOne({ username: req.body.username })
+  let potentialUser = await User.findOne({ username: req.body.username });
   if (potentialUser != null) {
     return res.status(409).json({ message: "Username is already taken" }); // Conflict
   }
@@ -40,8 +47,8 @@ router.post('/', async (req, res) => {
     firstName: body.firstName,
     lastName: body.lastName,
     username: body.username,
-    password: body.password
-  })
+    password: body.password,
+  });
 
   try {
     const newUser = await user.save();
@@ -52,34 +59,33 @@ router.post('/', async (req, res) => {
 });
 
 /* Log In */
-router.get('/Login', async function (req, res) {
+router.get("/Login", async function (req, res) {
   let user;
   try {
     // find user with username/password. If either is missing, user will be null.
     user = await User.findOne({
       username: req.body.username,
-      password: req.body.password
+      password: req.body.password,
     });
     if (user == null) {
       // username and password is wrong
-      return res.status(401).json({ message: 'Invalid Credentials' }); // Unauthorized
+      return res.status(401).json({ message: "Invalid Credentials" }); // Unauthorized
     }
     // found corresponding account
     return res.status(205).json({ userID: user._id }); // Reset Content
-
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 });
 
 /* Account Overview */
-router.get('/:userID', getUser, function (req, res) {
+router.get("/:userID", getUser, function (req, res) {
   // middleware found the user.
   return res.status(200).json(res.user); // OK
 });
 
 /* Saving Account Settings */
-router.patch('/:userID', getUser, async (req, res) => {
+router.patch("/:userID", getUser, async (req, res) => {
   // middleware found the user
   try {
     // if they wanted to change username, make sure it's not already taken
@@ -96,10 +102,19 @@ router.patch('/:userID', getUser, async (req, res) => {
       const key = updatedKeys[i];
       // if they updated their username, update the owner value on all of their owned campaigns
       if (key == "username" && res.user.username != req.body.username) {
-        await Campaign.updateMany({ _id: res.user.campaignsOwned }, { owner: req.body.username });
+        await Campaign.updateMany(
+          { _id: res.user.campaignsOwned },
+          { owner: req.body.username }
+        );
       }
       // only allow changes to values found in Account Settings
-      if ((key == "firstName" || key == "lastName" || key == "username" || key == "password") && req.body[key]) {
+      if (
+        (key == "firstName" ||
+          key == "lastName" ||
+          key == "username" ||
+          key == "password") &&
+        req.body[key]
+      ) {
         res.user[key] = req.body[key];
       }
     }
@@ -109,80 +124,91 @@ router.patch('/:userID', getUser, async (req, res) => {
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
-})
+});
 
 /* Deleting Account in Account Settings */
-router.delete('/:userID', getUser, async (req, res) => {
+router.delete("/:userID", getUser, async (req, res) => {
   // middleware found user
 
   try {
     // check donations
     if (res.user.donations.length > 0) {
-      return res.status(428).json({ message: "Cannot delete account with donations" }); // Precondition Required
+      return res
+        .status(428)
+        .json({ message: "Cannot delete account with donations" }); // Precondition Required
     }
 
     // check published campaigns
-    await res.user.populate('campaignsOwned');
+    await res.user.populate("campaignsOwned");
     const campaigns = res.user.campaignsOwned;
     for (let i = 0; i < campaigns.length; i++) {
       const campaign = campaigns[i];
       if (campaign.isPublished == true) {
-        return res.status(428).json({ message: "Cannot delete account with a published Campaign" }); // Precondition Required
+        return res
+          .status(428)
+          .json({ message: "Cannot delete account with a published Campaign" }); // Precondition Required
       }
     }
     // preconditions checked, start deletion.
 
     // delete all unpublished campaigns
     const promises = [];
-    campaigns.forEach(async campaign => promises.push(campaign.remove()));
+    campaigns.forEach(async (campaign) => promises.push(campaign.remove()));
     // delete user
     promises.push(res.user.remove());
     await Promise.all(promises);
-    return res.status(205).json({ message: 'Deleted user' }); // Reset Content
+    return res.status(205).json({ message: "Deleted user" }); // Reset Content
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
-})
+});
 
 /* Donate */
-router.post('/Donate/:campaignID,/:userID', getCampaign, getUser, async (req, res) => {
-  // check for correct params
-  const b = req.body;
-  if (!b.purchaseDate || !b.total || !b.rewards) {
-    return res.status(428).json({ message: "Missing necessary information" }); // Precondition Required
-  }
-  for (let i = 0; i < b.rewards.length; i++) {
-    const r = b.rewards[i];
-    if (!r.name || !r.price || !r.description || !r.expectedDeliveryDate) {
+router.post(
+  "/Donate/:campaignID,/:userID",
+  getCampaign,
+  getUser,
+  async (req, res) => {
+    // check for correct params
+    const b = req.body;
+    if (!b.purchaseDate || !b.total || !b.rewards) {
       return res.status(428).json({ message: "Missing necessary information" }); // Precondition Required
     }
-  }
-  // check for invalid data
-  // heads up, we are NOT doing Date validation. If they donated just now, they can exclude the date.
-  // otherwise we can assume admins are filling in data with "fake" donations.
-  // additionally, we are assuming that the reward information is correct.
-  if (b.total < 0) {
-    return res.status(428).json({ message: "Invalid Donation Total" }); // Precondition Required
-  }
-  if (!res.campaign.isPublished) {
-    return res.status(428).json({ message: "Campaign is not Published" }); // Precondition Required
-  }
+    for (let i = 0; i < b.rewards.length; i++) {
+      const r = b.rewards[i];
+      if (!r.name || !r.price || !r.description || !r.expectedDeliveryDate) {
+        return res
+          .status(428)
+          .json({ message: "Missing necessary information" }); // Precondition Required
+      }
+    }
+    // check for invalid data
+    // heads up, we are NOT doing Date validation. If they donated just now, they can exclude the date.
+    // otherwise we can assume admins are filling in data with "fake" donations.
+    // additionally, we are assuming that the reward information is correct.
+    if (b.total < 0) {
+      return res.status(428).json({ message: "Invalid Donation Total" }); // Precondition Required
+    }
+    if (!res.campaign.isPublished) {
+      return res.status(428).json({ message: "Campaign is not Published" }); // Precondition Required
+    }
 
-  // no errors, make donation:
-  res.user.donations.push({
-    campaignID: req.params.campaignID,
-    purchaseDate: b.purchaseDate,
-    total: b.total,
-    rewards: b.rewards
-  })
+    // no errors, make donation:
+    res.user.donations.push({
+      campaignID: req.params.campaignID,
+      purchaseDate: b.purchaseDate,
+      total: b.total,
+      rewards: b.rewards,
+    });
 
-  try {
-    const newUser = await user.save();
-    res.status(201).json({ userID: newUser._id }); // Created
-  } catch (error) {
-    res.status(500).json(error);
+    try {
+      const newUser = await user.save();
+      res.status(201).json({ userID: newUser._id }); // Created
+    } catch (error) {
+      res.status(500).json(error);
+    }
   }
-});
+);
 
 /**
  * This is a middleware function that is to be used whenever we expect a user ID from the client
@@ -195,7 +221,7 @@ async function getUser(req, res, next) {
   try {
     user = await User.findById(req.params.userID);
     if (user == null) {
-      return res.status(404).json({ message: 'Cannot find user' }); // Not Found
+      return res.status(404).json({ message: "Cannot find user" }); // Not Found
     }
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -203,7 +229,7 @@ async function getUser(req, res, next) {
 
   res.user = user;
   next();
-};
+}
 
 /**
  * This is a middleware function that is to be used whenever we expect a campaign ID from the client
@@ -216,7 +242,7 @@ async function getCampaign(req, res, next) {
   try {
     campaign = await Campaign.findById(req.params.campaignID);
     if (campaign == null) {
-      return res.status(404).json({ message: 'Cannot find campaign' });
+      return res.status(404).json({ message: "Cannot find campaign" });
     }
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -224,6 +250,6 @@ async function getCampaign(req, res, next) {
 
   res.campaign = campaign;
   next();
-};
+}
 
 module.exports = router;

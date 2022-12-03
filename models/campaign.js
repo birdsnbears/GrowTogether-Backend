@@ -55,10 +55,22 @@ const campaignSchema = new mongoose.Schema({
     }
   }],
   rewards: [{
-    name: String,
-    price: Number,
-    description: String,
-    expectedDeliveryDate: Date
+    name: {
+      type: String,
+      required: true
+    },
+    price: {
+      type: Number,
+      required: true
+    },
+    description: {
+      type: String,
+      required: true
+    },
+    expectedDeliveryDate: {
+      type: Date,
+      required: true
+    }
   }]
 });
 
