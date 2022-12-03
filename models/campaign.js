@@ -45,8 +45,14 @@ const campaignSchema = new mongoose.Schema({
     viewCount: Number
   }],
   content: [{
-    type: String,
-    content: String
+    type: {
+      type: String,
+      required: true
+    },
+    content: {
+      type: String,
+      required: true
+    }
   }],
   rewards: [{
     name: String,
