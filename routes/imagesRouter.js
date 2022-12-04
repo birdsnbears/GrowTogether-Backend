@@ -1,5 +1,6 @@
 var express = require("express");
 var fs = require("fs");
+var path = require("path");
 var router = express.Router();
 const Image = require("../models/image");
 
@@ -8,6 +9,42 @@ router.get("/", async function (req, res) {
   await createDefaultIfEmpty();
   const result = await Image.find();
   res.json(result);
+});
+
+var multer = require("multer");
+
+var storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "./public/images");
+  },
+  filename: (req, file, cb) => {
+    cb(null, "temp.png");
+  },
+});
+
+var upload = multer({ storage: storage });
+
+/* POST new Image */
+router.post("/", upload.single("image"), (req, res) => {
+  var obj = {
+    content: {
+      data: fs.readFileSync(
+        path.join(__dirname + "/../public/images/" + req.file.filename)
+      ),
+      contentType: "image/png",
+    },
+  };
+  Image.create(obj, (err, item) => {
+    if (err) {
+      console.log(err);
+      return res.status(500).send();
+    } else {
+      // item.save();
+      // res.redirect("/");
+      // res.status(201);
+      return res.status(201).send(item._id);
+    }
+  });
 });
 
 /* GET Image */
