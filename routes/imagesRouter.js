@@ -26,7 +26,7 @@ var upload = multer({ storage: storage });
 
 /* POST new Image */
 router.post("/", upload.single("image"), (req, res) => {
-  var obj = {
+  const obj = {
     content: {
       data: fs.readFileSync(
         path.join(__dirname + "/../public/images/" + req.file.filename)

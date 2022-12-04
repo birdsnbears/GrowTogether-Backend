@@ -17,9 +17,7 @@ router.post("/:userID", getUser, async (req, res) => {
   // check for invalid data
   try {
     if (b.mainImage) {
-      if (
-        !(isValidObjectId(b.mainImage) && (await Image.findById(b.mainImage)))
-      ) {
+      if (!(isValidObjectId(b.mainImage) && (await Image.findById(b.mainImage)))) {
         return res.status(404).json({ message: "Image not found" }); // Not Found
       }
     }
@@ -35,12 +33,16 @@ router.post("/:userID", getUser, async (req, res) => {
       title: b.title,
       subtitle: b.subtitle,
       description: b.description,
-      mainImage: b.mainImage,
       isPublished: false,
       owner: res.user.username,
       goal: b.goal,
       duration: b.duration,
     });
+
+    if (b.mainImage) {
+      campaign.mainImage = b.mainImage;
+    }
+
     const newCampaign = await campaign.save();
     res.user.campaignsOwned.push(newCampaign._id);
     await res.user.save();
@@ -65,77 +67,65 @@ router.post("/:userID", getUser, async (req, res) => {
 /***** FOR PUBLIC CAMPAIGN *****/
 
 /* Public Campaign Page */
+// Gets the extra information that the public campaign page needs on top of what's in the campaign document
 // router.get('/public/:campaignID', getCampaign, async (req, res) => {
 
 // })
 
 /***** FOR OVERVIEW *****/
 
+/* Campaign Overview */
+// Get the extra information that overview needs to display on top of what's in the campaign document
+router.get("/overview/:campaignID/:userID", getCampaign, getUser, async (req, res) => {
+  // things we need:
+  //
+});
+
 /* Publish Campaign */
-router.patch(
-  "/publish/:campaignID/:userID",
-  getCampaign,
-  getUser,
-  async (req, res) => {
-    // We can assume all in the stored campaign are valid values. We still must ensure that the content is not still empty though.
-    // Check Empty Contents
-    const camp = res.campaign;
-    if (camp.content.length <= 0) {
-      return res
-        .status(422)
-        .json({ message: "A Published Campaign must have Content" }); // Unprocessable Entity
-    }
-    // publish
-    try {
-      res.campaign.isPublished = true;
-      res.campaign.publishDate = Date.now();
-      const updatedCampaign = await res.campaign.save();
-      res.status(201).json(updatedCampaign); // Reset Content
-    } catch (error) {
-      res.status(400).json({ message: error.message });
-    }
+router.patch("/publish/:campaignID/:userID", getCampaign, getUser, async (req, res) => {
+  // We can assume all in the stored campaign are valid values. We still must ensure that the content is not still empty though.
+  // Check Empty Contents
+  const camp = res.campaign;
+  if (camp.content.length <= 0) {
+    return res.status(422).json({ message: "A Published Campaign must have Content" }); // Unprocessable Entity
   }
-);
+  // publish
+  try {
+    res.campaign.isPublished = true;
+    res.campaign.publishDate = Date.now();
+    const updatedCampaign = await res.campaign.save();
+    res.status(201).json(updatedCampaign); // Reset Content
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
 
 /***** FOR SETTINGS *****/
 
 /* Edit Settings */
 
 /* Delete Campaign */
-router.delete(
-  "/:campaignID/:userID",
-  getCampaign,
-  getUser,
-  async (req, res) => {
-    try {
-      // make sure user owns this campaign
-      if (
-        !res.user.campaignsOwned.find(
-          (campaignID) => campaignID == req.params.campaignID
-        )
-      ) {
-        return res
-          .status(403)
-          .json({ message: "You do not own this campaign" }); // Forbidden
-      }
-      // make sure campaign is not published
-      if (res.campaign.isPublished == true) {
-        return res
-          .status(428)
-          .json({
-            message: "Cannot delete a campaign that has already been published",
-          }); // Precondition Required
-      }
-      // remove from owner
-      await res.user.updateOne({ $pull: { campaignsOwned: res.campaign._id } }); // autosaves
-      // delete campaign
-      await res.campaign.remove();
-      res.status(205).json({ message: "Deleted Campaign" }); // Reset Content
-    } catch (err) {
-      res.status(500).json({ message: err.message });
+router.delete("/:campaignID/:userID", getCampaign, getUser, async (req, res) => {
+  try {
+    // make sure user owns this campaign
+    if (!res.user.campaignsOwned.find((campaignID) => campaignID == req.params.campaignID)) {
+      return res.status(403).json({ message: "You do not own this campaign" }); // Forbidden
     }
+    // make sure campaign is not published
+    if (res.campaign.isPublished == true) {
+      return res.status(428).json({
+        message: "Cannot delete a campaign that has already been published",
+      }); // Precondition Required
+    }
+    // remove from owner
+    await res.user.updateOne({ $pull: { campaignsOwned: res.campaign._id } }); // autosaves
+    // delete campaign
+    await res.campaign.remove();
+    res.status(205).json({ message: "Deleted Campaign" }); // Reset Content
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
-);
+});
 
 /***** FOR EDIT CONTENT *****/
 
