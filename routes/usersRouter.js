@@ -1,7 +1,7 @@
 var express = require("express");
 var router = express.Router();
 const User = require("../models/user");
-const Campaign = require("../models/campaign");
+const Campaign = require("../models/unpublishedCampaign");
 
 /***** FOR REAL *****/
 
@@ -58,7 +58,7 @@ router.get("/Login", async function (req, res) {
 /* Account Overview */
 router.get("/:userID", getUser, async function (req, res) {
   // middleware found the user.
-  await res.user.populate("campaignsOwned");
+  await res.user.populate("unpublishedCampaignsOwned");
   await res.user.populate("donations.campaign");
   await res.user.populate("donations.rewards");
   return res.status(200).json(res.user); // OK
@@ -82,7 +82,7 @@ router.patch("/:userID", getUser, async (req, res) => {
       const key = updatedKeys[i];
       // if they updated their username, update the owner value on all of their owned campaigns
       if (key == "username" && res.user.username != req.body.username) {
-        await Campaign.updateMany({ _id: res.user.campaignsOwned }, { owner: req.body.username });
+        await Campaign.updateMany({ _id: res.user.unpublishedCampaignsOwned }, { owner: req.body.username });
       }
       // only allow changes to values found in Account Settings
       if ((key == "firstName" || key == "lastName" || key == "username" || key == "password") && req.body[key]) {
@@ -108,18 +108,15 @@ router.delete("/:userID", getUser, async (req, res) => {
     }
 
     // check published campaigns
-    await res.user.populate("campaignsOwned");
-    const campaigns = res.user.campaignsOwned;
-    for (let i = 0; i < campaigns.length; i++) {
-      const campaign = campaigns[i];
-      if (campaign.isPublished == true) {
-        return res.status(428).json({ message: "Cannot delete account with a published Campaign" }); // Precondition Required
-      }
+    if (res.user.publishedCampaignsOwned.length > 0) {
+      return res.status(428).json({ message: "Cannot delete account with a published Campaign" }); // Precondition Required
     }
     // preconditions checked, start deletion.
 
     // delete all unpublished campaigns
     const promises = [];
+    res.user.populate("unpublishedCampaignsOwned");
+    const campaigns = res.user.unpublishedCampaignsOwned;
     campaigns.forEach(async (campaign) => promises.push(campaign.remove()));
     // delete user
     promises.push(res.user.remove());

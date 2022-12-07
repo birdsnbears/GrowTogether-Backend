@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema({
     {
       campaign: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Campaign",
+        ref: "PublishedCampaign",
         required: true,
       },
       purchaseDate: {
@@ -32,18 +32,24 @@ const userSchema = new mongoose.Schema({
       total: Number,
       rewards: [
         {
-          name: String,
-          price: Number,
-          description: String,
-          expectedDeliveryDate: Date,
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "PublishedReward",
+          required: true,
         },
       ],
     },
   ],
-  campaignsOwned: [
+  unpublishedCampaignsOwned: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Campaign",
+      ref: "UnpublishedCampaign",
+      required: true,
+    },
+  ],
+  publishedCampaignsOwned: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PublishedCampaign",
       required: true,
     },
   ],
