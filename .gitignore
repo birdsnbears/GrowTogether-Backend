@@ -105,3 +105,4 @@ dist
 
 # Rest Client file
 *.rest
+public/images/temp.png
