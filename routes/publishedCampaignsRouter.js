@@ -1,6 +1,6 @@
 var express = require("express");
 var router = express.Router();
-const Campaign = require("../models/unpublishedCampaign");
+const UnpublishedCampaign = require("../models/unpublishedCampaign");
 const User = require("../models/user");
 const Image = require("../models/image");
 const { isValidObjectId } = require("mongoose");
@@ -29,7 +29,7 @@ router.post("/:userID", getUser, async (req, res) => {
     }
 
     // no errors, make campaign
-    const campaign = new Campaign({
+    const campaign = new UnpublishedCampaign({
       title: b.title,
       subtitle: b.subtitle,
       description: b.description,
@@ -146,7 +146,7 @@ router.delete("/:campaignID/:userID", getCampaign, getUser, async (req, res) => 
 router.get("/", async (req, res) => {
   try {
     // Campaign.deleteMany();
-    const campaigns = await Campaign.find();
+    const campaigns = await UnpublishedCampaign.find();
     res.json(campaigns);
   } catch (error) {
     console.error(error.message);
@@ -178,8 +178,8 @@ router.patch("/:campaignID", getCampaign, async (req, res) => {
 /* DELETE ALL CAMPAIGNS. FOR DEBUGGING PURPOSES ONLY */
 router.delete("/", async (req, res) => {
   try {
-    await Campaign.deleteMany();
-    const campaigns = await Campaign.find();
+    await UnpublishedCampaign.deleteMany();
+    const campaigns = await UnpublishedCampaign.find();
     res.json(campaigns);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -195,7 +195,7 @@ router.delete("/", async (req, res) => {
 async function getCampaign(req, res, next) {
   let campaign;
   try {
-    campaign = await Campaign.findById(req.params.campaignID);
+    campaign = await UnpublishedCampaign.findById(req.params.campaignID);
     if (campaign == null) {
       return res.status(404).json({ message: "Cannot find campaign" }); // Not Found
     }

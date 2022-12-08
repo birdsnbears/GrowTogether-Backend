@@ -89,8 +89,9 @@ router.patch("/settings/:campaignID/:userID", getCampaign, getUser, async (req, 
   const b = req.body;
   try {
     // verify the given information is correct
-    if (b.mainImage) {
-      if (!(isValidObjectId(b.mainImage) && (await Image.findById(b.mainImage)))) {
+    if (b.mainImage && !isValidObjectId(b.mainImage)) {
+      const potentialImage = await Image.findById(b.mainImage);
+      if (potentialImage.length <= 0) {
         return res.status(404).json({ message: "Image not found" }); // Not Found
       }
     }
@@ -101,9 +102,9 @@ router.patch("/settings/:campaignID/:userID", getCampaign, getUser, async (req, 
       return res.status(428).json({ message: "Invalid duration amount" }); // Precondition Required
     }
     // update unpublished campaign
-    let updatedKeys = Object.keys(req.body);
+    let updatedKeys = Object.keys(b);
     updatedKeys.forEach((key) => {
-      res.campaign[key] = req.body[key];
+      res.campaign[key] = b[key];
     });
     // respond with new data
     const updatedUC = res.campaign.save();
