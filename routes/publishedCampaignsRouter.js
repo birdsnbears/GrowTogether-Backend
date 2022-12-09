@@ -1,143 +1,73 @@
 var express = require("express");
 var router = express.Router();
-const UnpublishedCampaign = require("../models/unpublishedCampaign");
+// const UnpublishedCampaign = require("../models/unpublishedCampaign");
+const PublishedCampaign = require("../models/publishedCampaign");
 const User = require("../models/user");
 const Image = require("../models/image");
 const { isValidObjectId } = require("mongoose");
 
-/***** FOR HEADER/Account Overview *****/
-
-/* Create Campaign */
-router.post("/:userID", getUser, async (req, res) => {
-  const b = req.body;
-  // check for correct params
-  if (!b.title || !b.subtitle || !b.description || !b.goal || !b.duration) {
-    return res.status(428).json({ message: "Missing necessary information" }); // Precondition Required
-  }
-  // check for invalid data
-  try {
-    if (b.mainImage) {
-      if (!(isValidObjectId(b.mainImage) && (await Image.findById(b.mainImage)))) {
-        return res.status(404).json({ message: "Image not found" }); // Not Found
-      }
-    }
-    if (b.goal <= 0) {
-      return res.status(428).json({ message: "Invalid goal amount" }); // Precondition Required
-    }
-    if (b.duration <= 0) {
-      return res.status(428).json({ message: "Invalid duration amount" }); // Precondition Required
-    }
-
-    // no errors, make campaign
-    const campaign = new UnpublishedCampaign({
-      title: b.title,
-      subtitle: b.subtitle,
-      description: b.description,
-      isPublished: false,
-      owner: res.user.username,
-      goal: b.goal,
-      duration: b.duration,
-    });
-
-    if (b.mainImage) {
-      campaign.mainImage = b.mainImage;
-    }
-
-    const newCampaign = await campaign.save();
-    res.user.campaignsOwned.push(newCampaign._id);
-    await res.user.save();
-    res.status(201).json(newCampaign);
-  } catch (error) {
-    res.status(500).json(error);
-  }
-});
-
-/***** FOR HOMEPAGE *****/
-
-/* Featured Campaigns */
-// router.get('/featured/', async (req, res) => {
-// 	// Top # of Campaigns with the highest visits from the previous day
-// })
-
-/* Recommended */
-// router.get('/recommended/', async (req, res) => {
-// 	// Top # of campaigns that had the most backing from previous day
-// })
-
-/***** FOR PUBLIC CAMPAIGN *****/
-
-/* Public Campaign Page */
-// Gets the extra information that the public campaign page needs on top of what's in the campaign document
-// router.get('/public/:campaignID', getCampaign, async (req, res) => {
-
-// })
-
 /***** FOR OVERVIEW *****/
-
-/* Campaign Overview */
-// Get the extra information that overview needs to display on top of what's in the campaign document
+// gather information for the public campaign
 router.get("/overview/:campaignID/:userID", getCampaign, getUser, async (req, res) => {
-  // things we need:
-  //
-});
-
-/* Publish Campaign */
-router.patch("/publish/:campaignID/:userID", getCampaign, getUser, async (req, res) => {
-  // We can assume all in the stored campaign are valid values. We still must ensure that the content is not still empty though.
-  // Check Empty Contents
-  const camp = res.campaign;
-  if (camp.content.length <= 0) {
-    return res.status(422).json({ message: "A Published Campaign must have Content" }); // Unprocessable Entity
-  }
-  // publish
-  try {
-    res.campaign.isPublished = true;
-    res.campaign.publishDate = Date.now();
-    const updatedCampaign = await res.campaign.save();
-    res.status(201).json(updatedCampaign); // Reset Content
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
+  // get the stuff
 });
 
 /***** FOR SETTINGS *****/
 
-/* Edit Settings */
-
-/* Delete Campaign */
-router.delete("/:campaignID/:userID", getCampaign, getUser, async (req, res) => {
+/* Edit Published Settings */
+router.patch("/settings/:campaignID/:userID", getCampaign, getUser, async (req, res) => {
+  const b = req.body;
   try {
-    // make sure user owns this campaign
-    if (!res.user.campaignsOwned.find((campaignID) => campaignID == req.params.campaignID)) {
-      return res.status(403).json({ message: "You do not own this campaign" }); // Forbidden
+    // verify the given information is correct
+    if (b.mainImage && !isValidObjectId(b.mainImage)) {
+      const potentialImage = await Image.findById(b.mainImage);
+      if (potentialImage.length <= 0) {
+        return res.status(404).json({ message: "Image not found" }); // Not Found
+      }
     }
-    // make sure campaign is not published
-    if (res.campaign.isPublished == true) {
-      return res.status(428).json({
-        message: "Cannot delete a campaign that has already been published",
-      }); // Precondition Required
+    // update unpublished campaign
+    const c = res.campaign;
+    c.title = b.title;
+    c.subtitle = b.subtitle;
+    c.description = b.description;
+    if (b.mainImage) {
+      c.mainImage = b.mainImage;
     }
-    // remove from owner
-    await res.user.updateOne({ $pull: { campaignsOwned: res.campaign._id } }); // autosaves
-    // delete campaign
-    await res.campaign.remove();
-    res.status(205).json({ message: "Deleted Campaign" }); // Reset Content
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+
+    // respond with new data
+    const updatedPC = await c.save();
+    return res.json(updatedPC);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 
 /***** FOR EDIT CONTENT *****/
 
-/* Edit Content */
-
-/***** FOR EDIT REWARDS *****/
-
-/* Edit Rewards */
-
-/***** FOR SEARCH *****/
-
-/* Search */
+/* Edit Published Content */
+router.patch("/content/:campaignID/:userID", getCampaign, getUser, async (req, res) => {
+  const b = req.body;
+  try {
+    // verify the given information is correct
+    const contents = b.content;
+    for (let i = 0; i < contents.length; i++) {
+      const section = contents[i];
+      if (!ValidContentTypes[section.type]) {
+        // there is a content here that does not conform to our accepted Content Types.
+        return res.status(428).json({ message: "Invalid Content Type" }); // Precondition Required
+      }
+      if (!section.content) {
+        return res.status(428).json({ message: "Every piece of content must have something to display." }); // Precondition Required
+      }
+    }
+    // seems good to me.
+    res.campaign.content = contents;
+    const updatedPC = await res.campaign.save();
+    return res.json(updatedPC);
+  } catch {
+    res.status(500).json({ message: error.message });
+  }
+});
 
 /*********************** FOR DEBUGGING ********************************/
 
@@ -146,7 +76,7 @@ router.delete("/:campaignID/:userID", getCampaign, getUser, async (req, res) => 
 router.get("/", async (req, res) => {
   try {
     // Campaign.deleteMany();
-    const campaigns = await UnpublishedCampaign.find();
+    const campaigns = await PublishedCampaign.find();
     res.json(campaigns);
   } catch (error) {
     console.error(error.message);
@@ -175,17 +105,6 @@ router.patch("/:campaignID", getCampaign, async (req, res) => {
   }
 });
 
-/* DELETE ALL CAMPAIGNS. FOR DEBUGGING PURPOSES ONLY */
-router.delete("/", async (req, res) => {
-  try {
-    await UnpublishedCampaign.deleteMany();
-    const campaigns = await UnpublishedCampaign.find();
-    res.json(campaigns);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
 /**
  * This is a middleware function that is to be used whenever we expect a campaign ID from the client
  * We search the database for a campaign with the given id.
@@ -195,7 +114,7 @@ router.delete("/", async (req, res) => {
 async function getCampaign(req, res, next) {
   let campaign;
   try {
-    campaign = await UnpublishedCampaign.findById(req.params.campaignID);
+    campaign = await PublishedCampaign.findById(req.params.campaignID);
     if (campaign == null) {
       return res.status(404).json({ message: "Cannot find campaign" }); // Not Found
     }
@@ -229,3 +148,10 @@ async function getUser(req, res, next) {
 }
 
 module.exports = router;
+
+const ValidContentTypes = {
+  Header: true,
+  Paragraph: true,
+  Image: true,
+  Video: true,
+};

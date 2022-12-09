@@ -59,6 +59,8 @@ router.get("/Login", async function (req, res) {
 router.get("/:userID", getUser, async function (req, res) {
   // middleware found the user.
   await res.user.populate("unpublishedCampaignsOwned");
+  await res.user.populate("publishedCampaignsOwned");
+  await res.user.populate("publishedCampaignsOwned.rewards");
   await res.user.populate("donations.campaign");
   await res.user.populate("donations.rewards");
   return res.status(200).json(res.user); // OK

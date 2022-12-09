@@ -1,7 +1,8 @@
 var express = require("express");
 var router = express.Router();
 const UnpublishedCampaign = require("../models/unpublishedCampaign");
-// const PublishedCampaign = require("../models/publishedCampaign");
+const PublishedCampaign = require("../models/publishedCampaign");
+const PublishedReward = require("../models/publishedReward");
 const User = require("../models/user");
 const Image = require("../models/image");
 const { isValidObjectId } = require("mongoose");
@@ -69,14 +70,47 @@ router.patch("/publish/:campaignID/:userID", getCampaign, getUser, async (req, r
   // publish
   try {
     // make new publishedDocument
-    // const PC = new PublishedCampaign({
-    //   ...res.campaign,
-    // });
-    // delete unpublishedDocument
-    UC.remove();
-    // update user's unpublishedList
+    const PC = new PublishedCampaign({
+      title: UC.title,
+      subtitle: UC.subtitle,
+      description: UC.description,
+      mainImage: UC.mainImage,
+      owner: UC.owner,
+      goal: UC.goal,
+      duration: UC.duration,
+      content: UC.content,
+      publishDate: new Date(Date.now()).toISOString(),
+      viewsByDate: [],
+      rewards: [],
+    });
+    await PC.save();
+
+    // make new Published Rewards
+    const newPublicRewards = [];
+    for (let i = 0; i < res.campaign.rewards.length; i++) {
+      const r = res.campaign.rewards[i];
+      const reward = new PublishedReward({
+        campaign: PC._id,
+        name: r.name,
+        price: r.price,
+        description: r.description,
+        expectedDeliveryDate: new Date(r.expectedDeliveryDate).toISOString(),
+      });
+      await reward.save();
+      newPublicRewards.push(reward._id);
+    }
+    PC.rewards = newPublicRewards;
+    await PC.save();
+    await PC.populate("rewards");
     // update user's publishedList
-    res.status(201).json(updatedCampaign); // Reset Content
+    res.user.publishedCampaignsOwned.push(PC._id);
+    // update user's unpublishedList
+    await res.user.updateOne({ $pull: { unpublishedCampaignsOwned: res.campaign._id } }); // autosaves
+    // delete unpublishedDocument
+    await UC.remove();
+    // update user
+    await res.user.save();
+    res.status(201).json(PC); // Created
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -109,7 +143,7 @@ router.patch("/settings/:campaignID/:userID", getCampaign, getUser, async (req, 
     // respond with new data
     const updatedUC = await res.campaign.save();
     return res.json(updatedUC);
-  } catch {
+  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
