@@ -65,7 +65,7 @@ router.get("/:userID", getUser, async function (req, res) {
 });
 
 /* Saving Account Settings */
-router.patch("/:userID", getUser, async (req, res) => {
+router.patch("/settings/:userID", getUser, async (req, res) => {
   // middleware found the user
   try {
     // if they wanted to change username, make sure it's not already taken
