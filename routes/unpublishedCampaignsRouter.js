@@ -138,9 +138,9 @@ router.patch("/content/:campaignID/:userID", getCampaign, getUser, async (req, r
   const b = req.body;
   try {
     // verify the given information is correct
-    const c = b.content;
-    for (let i = 0; i < c.length; i++) {
-      const section = c[i];
+    const contents = b.content;
+    for (let i = 0; i < contents.length; i++) {
+      const section = contents[i];
       if (!ValidContentTypes[section.type]) {
         // there is a content here that does not conform to our accepted Content Types.
         return res.status(428).json({ message: "Invalid Content Type" }); // Precondition Required
@@ -150,7 +150,7 @@ router.patch("/content/:campaignID/:userID", getCampaign, getUser, async (req, r
       }
     }
     // seems good to me.
-    res.campaign.content = c;
+    res.campaign.content = contents;
     const updatedUC = await res.campaign.save();
     return res.json(updatedUC);
   } catch {
@@ -162,31 +162,28 @@ router.patch("/content/:campaignID/:userID", getCampaign, getUser, async (req, r
 
 /* Edit Unpublished Rewards */
 router.patch("/rewards/:campaignID/:userID", getCampaign, getUser, async (req, res) => {
-  // const b = req.body;
-  // try {
-  //   // verify the given information is correct
-  //   if (b.mainImage) {
-  //     if (!(isValidObjectId(b.mainImage) && (await Image.findById(b.mainImage)))) {
-  //       return res.status(404).json({ message: "Image not found" }); // Not Found
-  //     }
-  //   }
-  //   if (b.goal && b.goal <= 0) {
-  //     return res.status(428).json({ message: "Invalid goal amount" }); // Precondition Required
-  //   }
-  //   if (b.duration && b.duration <= 0) {
-  //     return res.status(428).json({ message: "Invalid duration amount" }); // Precondition Required
-  //   }
-  //   // update unpublished campaign
-  //   let updatedKeys = Object.keys(req.body);
-  //   updatedKeys.forEach((key) => {
-  //     res.campaign[key] = req.body[key];
-  //   });
-  //   // respond with new data
-  //   const updatedUC = res.campaign.save();
-  //   return res.json(updatedUC);
-  // } catch {
-  //   res.status(500).json({ message: error.message });
-  // }
+  const b = req.body;
+  try {
+    // verify the given information is correct
+    const rewards = b.rewards;
+    for (let i = 0; i < rewards.length; i++) {
+      const reward = rewards[i];
+      if (!reward.name || !reward.description || reward.price <= 0) {
+        return res.status(428).json({ message: "Invalid Reward Properties" }); // Precondition Required
+      }
+      const rewardDate = new Date(reward.expectedDeliveryDate);
+      const today = new Date(Date.now());
+      if (rewardDate < today) {
+        return res.status(428).json({ message: "Date must be after today" }); // Precondition Required
+      }
+    }
+    // seems good to me.
+    res.campaign.rewards = rewards;
+    const updatedUC = await res.campaign.save();
+    return res.json(updatedUC);
+  } catch {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 /*********************** FOR DEBUGGING ********************************/
