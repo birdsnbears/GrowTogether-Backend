@@ -19,24 +19,9 @@ const userSchema = new mongoose.Schema({
   },
   donations: [
     {
-      campaign: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "PublishedCampaign",
-        required: true,
-      },
-      purchaseDate: {
-        type: Date,
-        required: true,
-        default: Date.now(),
-      },
-      total: Number,
-      rewards: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "PublishedReward",
-          required: true,
-        },
-      ],
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Donation",
+      required: true,
     },
   ],
   unpublishedCampaignsOwned: [

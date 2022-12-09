@@ -9,7 +9,9 @@ const { isValidObjectId } = require("mongoose");
 /***** FOR OVERVIEW *****/
 // gather information for the public campaign
 router.get("/overview/:campaignID/:userID", getCampaign, getUser, async (req, res) => {
-  // get the stuff
+  // get all donations for this campaign
+  // I think that's about it. The client will organize that shit.
+  // may no longer be necessary with the new donations router
 });
 
 /***** FOR SETTINGS *****/

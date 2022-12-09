@@ -9,11 +9,14 @@ const PublishedCampaign = require("./models/publishedCampaign");
 PublishedCampaign.find();
 const PublishedReward = require("./models/publishedReward");
 PublishedReward.find();
+const Donation = require("./models/donation");
+Donation.find();
 
 var usersRouter = require("./routes/usersRouter");
 var unpublishedCampaignsRouter = require("./routes/unpublishedCampaignsRouter");
 var publishedCampaignsRouter = require("./routes/publishedCampaignsRouter");
 var imagesRouter = require("./routes/imagesRouter");
+var donationsRouter = require("./routes/donationsRouter");
 
 var app = express();
 
@@ -28,5 +31,6 @@ app.use("/users", usersRouter);
 app.use("/unpublishedCampaigns", unpublishedCampaignsRouter);
 app.use("/publishedCampaigns", publishedCampaignsRouter);
 app.use("/images", imagesRouter);
+app.use("/donations", donationsRouter);
 
 module.exports = app;
