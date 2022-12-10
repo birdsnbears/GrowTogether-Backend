@@ -17,6 +17,7 @@ const donationSchema = new mongoose.Schema({
     default: Date.now(),
   },
   charityAmount: Number,
+  sum: Number,
   rewards: [
     {
       type: mongoose.Schema.Types.ObjectId,

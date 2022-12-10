@@ -35,10 +35,10 @@ const publishedCampaignSchema = new mongoose.Schema({
     type: Date,
     required: false,
   },
-  viewsByDate: [
+  views: [
     {
-      date: Date,
-      viewCount: Number,
+      type: Date,
+      required: true,
     },
   ],
   content: [

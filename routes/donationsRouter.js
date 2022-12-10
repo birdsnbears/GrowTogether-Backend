@@ -17,6 +17,7 @@ router.post("/:campaignID/:userID", getPC, getUser, async (req, res) => {
   // we do not expect a purchaseDate, as we record that information here.
   const b = req.body;
   try {
+    let sum = 0;
     // quick for loop to verify that all the given rewardIDs are valid
     b.rewards.forEach((reward) => {
       if (!isValidObjectId(reward)) {
@@ -30,16 +31,19 @@ router.post("/:campaignID/:userID", getPC, getUser, async (req, res) => {
       if (reward.campaign != req.params.campaignID) {
         return res.status(422).json({ message: "That reward does not belong to your campaign" }); // Unprocessable Entity
       }
+      sum += reward.price;
     }
     // make sure charityAmount is valid
     if (b.charityAmount < 0) {
       return res.status(428).json({ message: "Your charity amount must be greater than or equal to 0" });
     }
+    sum += b.charityAmount;
     // information validated. Create Donation
     const newDonation = new Donation({
       campaign: req.params.campaignID,
       user: req.params.userID,
       charityAmount: b.charityAmount,
+      sum: sum,
       rewards: b.rewards,
     });
     await newDonation.save();
@@ -55,6 +59,10 @@ router.post("/:campaignID/:userID", getPC, getUser, async (req, res) => {
 // probably used for PublishedCampaign's Overview Page
 router.get("/:campaignID", getPC, async (req, res) => {
   const relevantDonations = await Donation.find({ campaign: req.params.campaignID });
+  for (let i = 0; i < relevantDonations.length; i++) {
+    await relevantDonations[i].populate("rewards");
+    await relevantDonations[i].populate("campaign");
+  }
   return res.status(200).json(relevantDonations);
 });
 

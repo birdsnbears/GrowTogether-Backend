@@ -6,13 +6,27 @@ const User = require("../models/user");
 const Image = require("../models/image");
 const { isValidObjectId } = require("mongoose");
 
+/***** FOR PUBLIC PAGE *****/
+router.get("/view/:campaignID", getCampaign, async (req, res) => {
+  try {
+    const c = res.campaign;
+    await c.populate("rewards");
+    // update c.views
+    c.views.push(Date.now());
+    await c.save();
+    return res.status(200).json(c);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
 /***** FOR OVERVIEW *****/
 // gather information for the public campaign
-router.get("/overview/:campaignID/:userID", getCampaign, getUser, async (req, res) => {
-  // get all donations for this campaign
-  // I think that's about it. The client will organize that shit.
-  // may no longer be necessary with the new donations router
-});
+// router.get("/overview/:campaignID/:userID", getCampaign, getUser, async (req, res) => {
+//   // get all donations for this campaign
+//   // I think that's about it. The client will organize that shit.
+//   // may no longer be necessary with the new donations router
+// });
 
 /***** FOR SETTINGS *****/
 
@@ -40,7 +54,7 @@ router.patch("/settings/:campaignID/:userID", getCampaign, getUser, async (req, 
     const updatedPC = await c.save();
     return res.json(updatedPC);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
 
@@ -67,7 +81,7 @@ router.patch("/content/:campaignID/:userID", getCampaign, getUser, async (req, r
     const updatedPC = await res.campaign.save();
     return res.json(updatedPC);
   } catch {
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
 
@@ -79,16 +93,16 @@ router.get("/", async (req, res) => {
   try {
     // Campaign.deleteMany();
     const campaigns = await PublishedCampaign.find();
-    res.json(campaigns);
+    return res.json(campaigns);
   } catch (error) {
     console.error(error.message);
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
 
 /* GET a specific campaign listing by id. FOR DEBUGGING PURPOSES ONLY */
 router.get("/:campaignID", getCampaign, function (req, res) {
-  res.json(res.campaign);
+  return res.json(res.campaign);
 });
 
 /* PATCH Campaign. FOR DEBUG PURPOSES ONLY. THIS DOES NOT DO ANY DATA VALIDATION*/
@@ -101,9 +115,9 @@ router.patch("/:campaignID", getCampaign, async (req, res) => {
 
   try {
     const updatedCampaign = await res.campaign.save();
-    res.json(updatedCampaign);
+    return res.json(updatedCampaign);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    return res.status(400).json({ message: error.message });
   }
 });
 

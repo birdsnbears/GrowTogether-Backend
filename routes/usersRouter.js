@@ -1,7 +1,8 @@
 var express = require("express");
 var router = express.Router();
 const User = require("../models/user");
-const Campaign = require("../models/unpublishedCampaign");
+const UnpublishedCampaign = require("../models/unpublishedCampaign");
+const PublishedCampaign = require("../models/publishedCampaign");
 
 /***** FOR REAL *****/
 
@@ -61,6 +62,7 @@ router.get("/:userID", getUser, async function (req, res) {
   await res.user.populate("unpublishedCampaignsOwned");
   await res.user.populate("publishedCampaignsOwned");
   await res.user.populate("publishedCampaignsOwned.rewards");
+  await res.user.populate("donations");
   await res.user.populate("donations.campaign");
   await res.user.populate("donations.rewards");
   return res.status(200).json(res.user); // OK
@@ -84,7 +86,8 @@ router.patch("/settings/:userID", getUser, async (req, res) => {
       const key = updatedKeys[i];
       // if they updated their username, update the owner value on all of their owned campaigns
       if (key == "username" && res.user.username != req.body.username) {
-        await Campaign.updateMany({ _id: res.user.unpublishedCampaignsOwned }, { owner: req.body.username });
+        await UnpublishedCampaign.updateMany({ _id: res.user.unpublishedCampaignsOwned }, { owner: req.body.username });
+        await PublishedCampaign.updateMany({ _id: res.user.publishedCampaignsOwned }, { owner: req.body.username });
       }
       // only allow changes to values found in Account Settings
       if ((key == "firstName" || key == "lastName" || key == "username" || key == "password") && req.body[key]) {
@@ -219,7 +222,7 @@ async function getUser(req, res, next) {
 async function getCampaign(req, res, next) {
   let campaign;
   try {
-    campaign = await Campaign.findById(req.params.campaignID);
+    campaign = await UnpublishedCampaign.findById(req.params.campaignID);
     if (campaign == null) {
       return res.status(404).json({ message: "Cannot find campaign" });
     }
