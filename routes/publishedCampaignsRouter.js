@@ -4,6 +4,7 @@ var router = express.Router();
 const PublishedCampaign = require("../models/publishedCampaign");
 const User = require("../models/user");
 const Image = require("../models/image");
+const Donation = require("../models/donation");
 const { isValidObjectId } = require("mongoose");
 
 /***** FOR PUBLIC PAGE *****/
@@ -61,11 +62,45 @@ router.get("/featured", async (req, res) => {
 });
 
 // Get Recommended
-// Top 5 most donated to campaigns.
+// Top 5 most donated to campaigns in the last day
 router.get("/recommended", async (req, res) => {
   try {
-    // const recommended = something
-    // return res.status(200).json(recommended);
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000); // minus how many milliseconds there are in a day
+    const donationsWithinTheDay = await Donation.find({ purchaseDate: { $gte: oneDayAgo } });
+    // track the total donations each campaign got within the last day
+    const donationTracker = {};
+    for (let i = 0; i < donationsWithinTheDay.length; i++) {
+      const d = donationsWithinTheDay[i];
+      if (donationTracker[d.campaign]) {
+        donationTracker[d.campaign] = donationTracker[d.campaign] + d.sum;
+      } else {
+        donationTracker[d.campaign] = d.sum;
+      }
+    }
+    // put the campaigns and their past-day totals into an array to be sorted
+    const campaigns = Object.keys(donationTracker);
+    const totalTracker = [];
+    campaigns.forEach((c) => {
+      totalTracker.push({
+        campaignID: c,
+        total: donationTracker[c],
+      });
+    });
+    // sort the campaigns by who got the most donations in the last day.
+    totalTracker.sort((c1, c2) => {
+      return c1.total - c2.total;
+    });
+    const result = [];
+    for (let i = 0; i < 5; i++) {
+      const best = totalTracker.pop();
+      if (best) {
+        const campaign = await PublishedCampaign.findById(best.campaignID);
+        result.push(campaign);
+      } else {
+        break;
+      }
+    }
+    return res.status(200).json(result);
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
