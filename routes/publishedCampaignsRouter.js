@@ -20,13 +20,56 @@ router.get("/view/:campaignID", getCampaign, async (req, res) => {
   }
 });
 
-/***** FOR OVERVIEW *****/
-// gather information for the public campaign
-// router.get("/overview/:campaignID/:userID", getCampaign, getUser, async (req, res) => {
-//   // get all donations for this campaign
-//   // I think that's about it. The client will organize that shit.
-//   // may no longer be necessary with the new donations router
-// });
+/***** FOR HOME PAGE *****/
+
+// Get Featured
+// Top 3 Campaigns with the highest amount of visits from that last 24 hours
+router.get("/featured", async (req, res) => {
+  try {
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000); // minus how many milliseconds there are in a day
+    const viewedWithinTheDay = await PublishedCampaign.find({ views: { $gte: oneDayAgo } });
+    // for each campaign, determine how many views it has that are greater than oneDayAgo.
+    for (let i = 0; i < viewedWithinTheDay.length; i++) {
+      const c = viewedWithinTheDay[i];
+      let viewsInLastDay = 0;
+      const views = c.views;
+      for (let j = 0; j < views.length; j++) {
+        const v = views[j];
+        if (new Date(v) >= oneDayAgo) {
+          viewsInLastDay++;
+        }
+      }
+      c.viewsInLastDay = viewsInLastDay;
+      console.log(c.viewsInLastDay);
+    }
+    viewedWithinTheDay.sort((c1, c2) => {
+      return c2.viewsInLastDay - c1.viewsInLastDay;
+    });
+    const result = [];
+    for (let i = 0; i < 3; i++) {
+      const best = viewedWithinTheDay.pop();
+      if (best) {
+        result.push(best);
+      } else {
+        break;
+      }
+    }
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+// Get Recommended
+// Top 5 most donated to campaigns.
+router.get("/recommended", async (req, res) => {
+  try {
+    // const recommended = something
+    // return res.status(200).json(recommended);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
 
 /***** FOR SETTINGS *****/
 
