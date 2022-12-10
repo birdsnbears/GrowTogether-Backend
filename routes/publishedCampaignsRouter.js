@@ -106,6 +106,16 @@ router.get("/recommended", async (req, res) => {
   }
 });
 
+// Get Search Options
+router.get("/searchOptions", async (req, res) => {
+  try {
+    const result = await PublishedCampaign.aggregate().project({ title: 1, subtitle: 1, description: 1 });
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
 /***** FOR SETTINGS *****/
 
 /* Edit Published Settings */
