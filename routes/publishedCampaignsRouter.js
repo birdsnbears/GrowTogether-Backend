@@ -24,11 +24,11 @@ router.get("/view/:campaignID", getCampaign, async (req, res) => {
 /***** FOR HOME PAGE *****/
 
 // Get Featured
-// Top 3 Campaigns with the highest amount of visits from that last 24 hours
+// Top 3 Campaigns with the highest amount of visits from that last week
 router.get("/featured", async (req, res) => {
   try {
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000); // minus how many milliseconds there are in a day
-    const viewedWithinTheDay = await PublishedCampaign.find({ views: { $gte: oneDayAgo } });
+    const oneWeekAgo = new Date(Date.now() - 24 * 60 * 60 * 1000 * 7); // minus how many milliseconds there are in a week
+    const viewedWithinTheDay = await PublishedCampaign.find({ views: { $gte: oneWeekAgo } });
     // for each campaign, determine how many views it has that are greater than oneDayAgo.
     for (let i = 0; i < viewedWithinTheDay.length; i++) {
       const c = viewedWithinTheDay[i];
@@ -36,7 +36,7 @@ router.get("/featured", async (req, res) => {
       const views = c.views;
       for (let j = 0; j < views.length; j++) {
         const v = views[j];
-        if (new Date(v) >= oneDayAgo) {
+        if (new Date(v) >= oneWeekAgo) {
           viewsInLastDay++;
         }
       }
@@ -62,11 +62,11 @@ router.get("/featured", async (req, res) => {
 });
 
 // Get Recommended
-// Top 5 most donated to campaigns in the last day
+// Top 5 most donated to campaigns in the last week
 router.get("/recommended", async (req, res) => {
   try {
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000); // minus how many milliseconds there are in a day
-    const donationsWithinTheDay = await Donation.find({ purchaseDate: { $gte: oneDayAgo } });
+    const oneWeekAgo = new Date(Date.now() - 24 * 60 * 60 * 1000 * 7); // minus how many milliseconds there are in a week
+    const donationsWithinTheDay = await Donation.find({ purchaseDate: { $gte: oneWeekAgo } });
     // track the total donations each campaign got within the last day
     const donationTracker = {};
     for (let i = 0; i < donationsWithinTheDay.length; i++) {
