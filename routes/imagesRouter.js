@@ -98,7 +98,11 @@ router.delete("/", async function (req, res) {
       }
       const unpublishedVictim = await UnpublishedCampaign.find({ mainImage: image._id });
       const publishedVictim = await PublishedCampaign.find({ mainImage: image._id });
-      if (unpublishedVictim.length == 0 && publishedVictim.length == 0) {
+      const unpublishedContentVictim = await UnpublishedCampaign.find({ $expr: { $in: [image._id, "$content.content"] } });
+      const publishedContentVictim = await PublishedCampaign.find({ $expr: { $in: [image._id, "$content.content"] } });
+      console.log(unpublishedContentVictim[0] ? unpublishedContentVictim[0].title : "");
+      console.log(publishedContentVictim[0] ? publishedContentVictim[0].title : "");
+      if (unpublishedVictim.length == 0 && publishedVictim.length == 0 && unpublishedContentVictim.length == 0 && publishedContentVictim.length == 0) {
         await image.remove();
       }
     }
