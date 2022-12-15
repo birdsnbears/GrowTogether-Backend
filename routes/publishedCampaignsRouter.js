@@ -44,7 +44,7 @@ router.get("/featured", async (req, res) => {
       console.log(c.viewsInLastDay);
     }
     viewedWithinTheDay.sort((c1, c2) => {
-      return c2.viewsInLastDay - c1.viewsInLastDay;
+      return c1.viewsInLastDay - c2.viewsInLastDay;
     });
     const result = [];
     for (let i = 0; i < 3; i++) {
